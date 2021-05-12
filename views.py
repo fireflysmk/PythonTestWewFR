@@ -11,3 +11,9 @@ class About:
     def __call__(self, request):
         return '200 OK', page_render('about_test_page.html',
                                      data=request.get('data', None))
+
+
+class Registry:
+    def __call__(self, request):
+        return '200 OK', page_render('reg.html',
+                                     data=request.get('data', None))
