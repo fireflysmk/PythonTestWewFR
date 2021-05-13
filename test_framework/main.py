@@ -41,8 +41,6 @@ class Framework:
         else:
             view = PageNotFound()
 
-        request = {}
-
         # наполняем словарь request элементами и передаем контроллерам
 
         for front in self.fronts_lst:

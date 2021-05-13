@@ -1,9 +1,9 @@
 from datetime import date
-from views import MainPage, About, Registry
+from views import *
 
 
 def data_front(request):
-    request['data'] = date.today()
+    request['date'] = date.today()
 
 
 def key_front(request):
@@ -13,7 +13,13 @@ def key_front(request):
 fronts = [data_front, key_front]
 
 routes = {
-    '/': MainPage(),
-    '/about/': About(),
-    '/reg/': Registry(),
+    '/': Index(),
+    '/About/': About(),
+    '/Reg/': Registry(),
+    '/Course/': Courses(),
+    '/courses-list/': CoursesList(),
+    '/create-course/': CreateCourse(),
+    '/create-category/': CreateCategory(),
+    '/category-list/': CategoryList(),
+    '/copy-course/': CopyCourse()
 }
