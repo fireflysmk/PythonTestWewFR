@@ -110,6 +110,8 @@ class CreateCourse:
                                              id=category.id)
             except KeyError:
                 return '200 OK', 'No categories have been added yet'
+            except ValueError:
+                return '502', 'Category not found'
 
 
 # контроллер - создать категорию

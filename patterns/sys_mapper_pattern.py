@@ -70,30 +70,4 @@ class DbDeleteException(Exception):
 class RecordNotFoundException(Exception):
     def __init__(self, message):
         super().__init__(f'Record not found: {message}')
-"""
-connection = sqlite3.connect('patterns.sqlite')
 
-
-# архитектурный системный паттерн - Data Mapper
-class MapperRegistry:
-    mappers = {
-        'student': StudentMapper,
-        #'category': CategoryMapper
-    }
-
-    @staticmethod
-    def get_mapper(obj):
-        print(f"ой ой{obj.__class__}")
-        if isinstance(obj, Student):
-            print("дадада")
-            #return StudentMapper(connection)
-        #if isinstance(obj, Category):
-            #return CategoryMapper(connection)
-
-    @staticmethod
-    def get_current_mapper(name):
-        return MapperRegistry.mappers[name](connection)
-
-
-
-"""

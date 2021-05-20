@@ -194,6 +194,8 @@ class Logger(metaclass=SingletonByName):
         self.writer.write(text)
 
 
+
+
 class StudentMapper:
 
     def __init__(self, connection):
