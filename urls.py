@@ -12,6 +12,9 @@ def key_front(request):
 
 fronts = [data_front, key_front]
 
+"""
+remove this and replace by deco-logic -> structural_patters logic
+
 routes = {
     '/': Index(),
     '/About/': About(),
@@ -23,3 +26,4 @@ routes = {
     '/category-list/': CategoryList(),
     '/copy-course/': CopyCourse()
 }
+"""
