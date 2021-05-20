@@ -1,6 +1,6 @@
 import copy
 import quopri
-from patterns.behavioral_patterns import ConsoleWriter, Subject
+from behavioral_patterns import ConsoleWriter, Subject
 
 
 # абстрактный пользователь
@@ -8,31 +8,24 @@ class User:
     def __init__(self, name):
         self.name = name
 
-
 # преподаватель
 class Teacher(User):
     pass
 
 
-# Администратор
-class Administrator:
-    pass
-
-
-# студент
 class Student(User):
+
     def __init__(self, name):
         self.courses = []
         super().__init__(name)
 
 
-# порождающий паттерн
-# Абстрактная фабрика - фабрика пользователей
+
+# порождающий паттерн Абстрактная фабрика - фабрика пользователей
 class UserFactory:
     types = {
         'student': Student,
-        'teacher': Teacher,
-        'admin': Administrator,
+        'teacher': Teacher
     }
 
     # порождающий паттерн Фабричный метод
@@ -77,11 +70,6 @@ class RecordCourse(Course):
     pass
 
 
-# Лекция
-class LectoriumCourse:
-    pass
-
-
 # Категория
 class Category:
     # реестр?
@@ -105,8 +93,7 @@ class Category:
 class CourseFactory:
     types = {
         'interactive': InteractiveCourse,
-        'record': RecordCourse,
-        'lecture': LectoriumCourse
+        'record': RecordCourse
     }
 
     # порождающий паттерн Фабричный метод
@@ -135,7 +122,7 @@ class Engine:
         for item in self.categories:
             if item.id == id:
                 return item
-        raise Exception(f'отсутствует категория с id = {id}')
+        raise Exception(f'Нет категории с id = {id}')
 
     @staticmethod
     def create_course(type_, name, category):
@@ -179,6 +166,7 @@ class SingletonByName(type):
             return cls.__instance[name]
 
 
+# Заметка, можно применить стратегию если добавить стратегию логирования
 class Logger(metaclass=SingletonByName):
 
     def __init__(self, name, writer=ConsoleWriter()):
@@ -188,3 +176,4 @@ class Logger(metaclass=SingletonByName):
     def log(self, text):
         text = f'log---> {text}'
         self.writer.write(text)
+
