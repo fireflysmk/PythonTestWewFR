@@ -1,10 +1,15 @@
 import copy
 import quopri
+from patterns.behavioral_patterns import ConsoleWriter, Subject
+from patterns.sys_unit_of_work_pattern import DomainObject
+import sqlite3
+import threading
 
 
 # абстрактный пользователь
 class User:
-    pass
+    def __init__(self, name):
+        self.name = name
 
 
 # преподаватель
@@ -18,11 +23,15 @@ class Administrator:
 
 
 # студент
-class Student(User):
-    pass
+class Student(User, DomainObject):
+
+    def __init__(self, name):
+        self.courses = []
+        super().__init__(name)
 
 
-# порождающий паттерн Абстрактная фабрика - фабрика пользователей
+# порождающий паттерн
+# Абстрактная фабрика - фабрика пользователей
 class UserFactory:
     types = {
         'student': Student,
@@ -32,8 +41,8 @@ class UserFactory:
 
     # порождающий паттерн Фабричный метод
     @classmethod
-    def create(cls, type_):
-        return cls.types[type_]()
+    def create(cls, type_, name):
+        return cls.types[type_](name)
 
 
 # порождающий паттерн Прототип - Курс
@@ -44,12 +53,22 @@ class CoursePrototype:
         return copy.deepcopy(self)
 
 
-class Course(CoursePrototype):
+class Course(CoursePrototype, Subject):
 
     def __init__(self, name, category):
         self.name = name
         self.category = category
         self.category.courses.append(self)
+        self.students = []
+        super().__init__()
+
+    def __getitem__(self, item):
+        return self.students[item]
+
+    def add_student(self, student: Student):
+        self.students.append(student)
+        student.courses.append(self)
+        self.notify()
 
 
 # Интерактивный курс
@@ -63,7 +82,7 @@ class RecordCourse(Course):
 
 
 # Лекция
-class LectotiumCourse:
+class LectoriumCourse:
     pass
 
 
@@ -91,7 +110,7 @@ class CourseFactory:
     types = {
         'interactive': InteractiveCourse,
         'record': RecordCourse,
-        'lecture': LectotiumCourse
+        'lecture': LectoriumCourse
     }
 
     # порождающий паттерн Фабричный метод
@@ -109,8 +128,8 @@ class Engine:
         self.categories = []
 
     @staticmethod
-    def create_user(type_):
-        return UserFactory.create(type_)
+    def create_user(type_, name):
+        return UserFactory.create(type_, name)
 
     @staticmethod
     def create_category(name, category=None):
@@ -118,20 +137,24 @@ class Engine:
 
     def find_category_by_id(self, id):
         for item in self.categories:
-            print('item', item.id)
             if item.id == id:
                 return item
-        raise Exception(f'Нет категории с id = {id}')
+        raise Exception(f'отсутствует категория с id = {id}')
 
     @staticmethod
     def create_course(type_, name, category):
         return CourseFactory.create(type_, name, category)
 
-    def get_course(self, name):
+    def get_course(self, name) -> Course:
         for item in self.courses:
             if item.name == name:
                 return item
         return None
+
+    def get_student(self, name) -> Student:
+        for item in self.students:
+            if item.name == name:
+                return item
 
     @staticmethod
     def decode_value(val):
@@ -162,9 +185,108 @@ class SingletonByName(type):
 
 class Logger(metaclass=SingletonByName):
 
-    def __init__(self, name):
+    def __init__(self, name, writer=ConsoleWriter()):
         self.name = name
+        self.writer = writer
+
+    def log(self, text):
+        text = f'log---> {text}'
+        self.writer.write(text)
+
+
+class StudentMapper:
+
+    def __init__(self, connection):
+        self.connection = connection
+        self.cursor = connection.cursor()
+        self.tablename = 'student'
+
+    def all(self):
+        statement = f'SELECT * from {self.tablename}'
+        self.cursor.execute(statement)
+        result = []
+        for item in self.cursor.fetchall():
+            id, name = item
+            student = Student(name)
+            student.id = id
+            result.append(student)
+        return result
+
+    def find_by_id(self, id):
+        statement = f"SELECT id, name FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(statement, (id,))
+        result = self.cursor.fetchone()
+        if result:
+            return Student(*result)
+        else:
+            raise RecordNotFoundException(f'record with id={id} not found')
+
+    def insert(self, obj):
+        statement = f"INSERT INTO {self.tablename} (name) VALUES (?)"
+        self.cursor.execute(statement, (obj.name,))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbCommitException(e.args)
+
+    def update(self, obj):
+        statement = f"UPDATE {self.tablename} SET name=? WHERE id=?"
+        self.cursor.execute(statement, (obj.name, obj.id))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbUpdateException(e.args)
+
+    def delete(self, obj):
+        statement = f"DELETE FROM {self.tablename} WHERE id=?"
+        self.cursor.execute(statement, (obj.id,))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbDeleteException(e.args)
+
+
+connection = sqlite3.connect('patterns.sqlite')
+
+
+class MapperRegistry:
+    mappers = {
+        'student': StudentMapper,
+    }
 
     @staticmethod
-    def log(text):
-        print('log--->', text)
+    def get_mapper(obj):
+        if isinstance(obj, Student):
+            return StudentMapper(connection)
+
+    @staticmethod
+    def get_current_mapper(name):
+        return MapperRegistry.mappers[name](connection)
+
+
+class DbCommitException(Exception):
+    def __init__(self, message):
+        super().__init__(f'Db commit error: '
+                         f'{message}'
+                         )
+
+
+class DbUpdateException(Exception):
+    def __init__(self, message):
+        super().__init__(f'Db update error: '
+                         f'{message}'
+                         f'')
+
+
+class DbDeleteException(Exception):
+    def __init__(self, message):
+        super().__init__(f'Db delete error: '
+                         f'{message}'
+                         )
+
+
+class RecordNotFoundException(Exception):
+    def __init__(self, message):
+        super().__init__(f'Record not found: '
+                         f'{message}'
+                         )
